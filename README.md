@@ -41,9 +41,52 @@ CooLab es una plataforma innovadora que conecta donantes con organizaciones soci
 2. **Instalar dependencias**
    ```bash
    npm install
+   npm install leaflet react-leaflet @supabase/supabase-js
    ```
 
-3. **Iniciar la aplicación en modo desarrollo**
+3. **Configurar variables de entorno (.env)**
+   Crea un archivo `.env` en la raíz del proyecto con:
+   ```env
+   REACT_APP_SUPABASE_URL=tu_url_de_supabase
+   REACT_APP_SUPABASE_ANON_KEY=tu_clave_anonima
+   REACT_APP_MAPTILER_KEY=tu_api_key_de_maptiler
+   ```
+
+4. **Configurar Supabase (PostgreSQL)**
+   - Crea el proyecto en Supabase y una tabla `organizations`:
+   ```sql
+   CREATE TABLE organizations (
+     id SERIAL PRIMARY KEY,
+     name VARCHAR(255) NOT NULL,
+     country VARCHAR(100) NOT NULL,
+     city VARCHAR(100) NOT NULL,
+     address TEXT,
+     lat DECIMAL(10,8),
+     lng DECIMAL(11,8),
+     ods INTEGER[],
+     targetPopulation VARCHAR(100)[],
+     socialObject TEXT,
+     contact JSONB,
+     projects JSONB,
+     created_at TIMESTAMP DEFAULT NOW()
+   );
+   ```
+
+5. **Configurar MapTiler (tiles del mapa)**
+   - Crea cuenta gratuita en `https://www.maptiler.com/` y copia tu API Key en `.env`.
+
+6. **Habilitar CSS de Leaflet**
+   - Asegúrate de que `public/index.html` incluya:
+   ```html
+   <link
+     rel="stylesheet"
+     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""
+   />
+   ```
+
+7. **Iniciar la aplicación en modo desarrollo**
    ```bash
    npm start
    ```
@@ -64,6 +107,8 @@ CooLab es una plataforma innovadora que conecta donantes con organizaciones soci
 - **Estilos**: Tailwind CSS 3.4.17
 - **Iconos**: SVG inline
 - **Internacionalización**: Sistema de archivos JSON
+- **Mapas**: Leaflet + React-Leaflet + MapTiler
+- **Base de datos**: Supabase (PostgreSQL)
 - **Responsive Design**: Mobile-first approach
 
 ## 🌍 Idiomas Soportados
@@ -94,6 +139,10 @@ app_web/
 │   └── favicon.ico        # Icono de la aplicación
 ├── src/                   # Código fuente
 │   ├── App.js            # Componente principal
+ │   ├── components/
+ │   │   └── Mapa.js       # Componente del mapa (Leaflet)
+ │   ├── lib/
+ │   │   └── supabaseClient.js  # Cliente Supabase
 │   ├── App.css           # Estilos personalizados
 │   ├── index.js          # Punto de entrada
 │   ├── index.css         # Estilos base
@@ -168,3 +217,51 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ---
 
 **CooLab** - Conectando Impacto, Transformando Comunidades 🌟
+
+---
+
+## 🗺️ Integración del Mapa Interactivo (Paso a Paso)
+
+1) Instala dependencias:
+```bash
+npm install leaflet react-leaflet @supabase/supabase-js
+```
+
+2) Variables de entorno (`.env`):
+```env
+REACT_APP_SUPABASE_URL=tu_url_de_supabase
+REACT_APP_SUPABASE_ANON_KEY=tu_clave_anonima
+REACT_APP_MAPTILER_KEY=tu_api_key_de_maptiler
+```
+
+3) Archivos nuevos:
+- `src/lib/supabaseClient.js` (cliente Supabase + funciones CRUD)
+- `src/components/Mapa.js` (Leaflet + MapTiler + marcadores)
+
+4) Habilitar CSS Leaflet en `public/index.html`:
+```html
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/> 
+```
+
+5) Integración en `src/App.js`:
+- Importa el mapa: `import Mapa from './components/Mapa'`
+- En la vista de mapa, renderiza:
+```jsx
+<Mapa organizations={filteredOrganizations} setSelectedOrg={setSelectedOrg} selectedOrg={selectedOrg} />
+```
+
+6) Reemplazar datos locales por Supabase:
+- Opcional: mover la carga inicial de organizaciones a un efecto que llame `cargarOrganizaciones()` y guarde en `organizations`.
+
+7) Seguridad:
+- Usa solo la clave anónima en el frontend.
+- No subir `.env` (agregar a `.gitignore`).
+
+8) Escalabilidad futura (MongoDB Atlas):
+- Mantener datos estructurados (organizaciones) en PostgreSQL (Supabase).
+- Usar MongoDB para adjuntos, comentarios y logs flexibles.

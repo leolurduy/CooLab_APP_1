@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Mapa from "./components/Mapa";
 
 // Importar todos los archivos de traducción
 import es from "./languages/es.json";
@@ -658,27 +659,13 @@ const App = () => {
           </div>
         </div>
         
-        {/* Map */}
+        {/* Map - Leaflet */}
         <div className="flex-1 relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-200">
-            <div className="absolute inset-0 opacity-30" style={{
-              backgroundImage: `url("image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }}></div>
-            
-            {filteredOrganizations.map((org) => (
-              <div
-                key={org.id}
-                className="absolute w-4 h-4 bg-red-500 rounded-full cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform"
-                style={{
-                  left: `${50 + (org.id - 1) * 15}%`,
-                  top: `${30 + (org.id - 1) * 10}%`,
-                }}
-                onClick={() => setSelectedOrg(org)}
-              >
-                <div className="w-2 h-2 bg-white rounded-full mx-auto mt-1"></div>
-              </div>
-            ))}
-          </div>
+          <Mapa
+            organizations={filteredOrganizations}
+            setSelectedOrg={setSelectedOrg}
+            selectedOrg={selectedOrg}
+          />
         </div>
         
         {/* Right Sidebar - Organization Details */}
@@ -815,7 +802,7 @@ const App = () => {
               <div className="sm:text-center lg:text-left">
                 <h1 className="text-2xl tracking-tight font-extrabold text-gray-900 sm:text-3xl md:text-4xl">
                   <span className="block mb-1">Laboratorio de Cooperación</span>
-                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">- CooLab</span>
+                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">-CooLab-</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-600 sm:mt-5 sm:text-lg sm:max-w-xl sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                   Plataforma innovadora que conecta donantes con organizaciones sociales, facilitando el impacto positivo en comunidades vulnerables y proyectos sostenibles en América Latina y el Mundo.
