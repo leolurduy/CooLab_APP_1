@@ -1,70 +1,170 @@
-# Getting Started with Create React App
+# CooLab - Plataforma de Conexión Social
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 🌟 Descripción
 
-## Available Scripts
+CooLab es una plataforma innovadora que conecta donantes con organizaciones sociales en América Latina, facilitando el impacto positivo en comunidades vulnerables y proyectos sostenibles. Nuestra misión es crear puentes de colaboración para un futuro más justo y sostenible.
 
-In the project directory, you can run:
+## ✨ Características Principales
 
-### `npm start`
+### 🎯 Para Donantes
+- **Registro Simplificado**: Formulario fácil de completar con información básica
+- **Descubrimiento de Organizaciones**: Encuentra organizaciones confiables cerca de ti
+- **Filtros Avanzados**: Busca por ODS, población objetivo y ubicación
+- **Mapa Interactivo**: Visualiza organizaciones en un mapa intuitivo
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 🏢 Para Organizaciones
+- **Perfil Completo**: Registra tu organización con información detallada
+- **Formulario Extendido**: Opción para incluir proyectos y documentación
+- **Visibilidad Internacional**: Presenta tu trabajo al mundo
+- **Conexión Directa**: Recibe donaciones y colaboraciones
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 🗺️ Mapa Interactivo
+- **Filtros por Ubicación**: País, ciudad, ODS y población objetivo
+- **Información Detallada**: Perfiles completos de cada organización
+- **Contacto Directo**: Información de contacto y proyectos
+- **Visualización en Tiempo Real**: Impacto social y ambiental actualizado
 
-### `npm test`
+## 🚀 Instalación y Configuración
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prerrequisitos
+- Node.js (versión 16 o superior)
+- npm (incluido con Node.js)
 
-### `npm run build`
+### Pasos de Instalación
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. **Clonar el repositorio**
+   ```bash
+   git clone [URL_DEL_REPOSITORIO]
+   cd app_web
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. **Iniciar la aplicación en modo desarrollo**
+   ```bash
+   npm start
+   ```
 
-### `npm run eject`
+4. **Abrir en el navegador**
+   La aplicación se abrirá automáticamente en `http://localhost:3000`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Scripts Disponibles
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- `npm start` - Inicia la aplicación en modo desarrollo
+- `npm build` - Construye la aplicación para producción
+- `npm test` - Ejecuta las pruebas
+- `npm eject` - Expone la configuración de webpack (irreversible)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🎨 Tecnologías Utilizadas
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- **Frontend**: React 19.1.1
+- **Estilos**: Tailwind CSS 3.4.17
+- **Iconos**: SVG inline
+- **Internacionalización**: Sistema de archivos JSON
+- **Responsive Design**: Mobile-first approach
 
-## Learn More
+## 🌍 Idiomas Soportados
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- 🇪🇸 Español (por defecto)
+- 🇬🇧 Inglés
+- 🇵🇹 Portugués
+- 🇫🇷 Francés
+- 🇮🇹 Italiano
+- 🇯🇵 Japonés
+- 🇷🇺 Ruso
+- 🇰🇷 Coreano
+- 🇨🇳 Chino
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 📱 Características Responsivas
 
-### Code Splitting
+- **Mobile-First**: Diseño optimizado para dispositivos móviles
+- **Adaptativo**: Se adapta a diferentes tamaños de pantalla
+- **Touch-Friendly**: Interfaz optimizada para pantallas táctiles
+- **Accesibilidad**: Cumple con estándares de accesibilidad web
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 🔧 Estructura del Proyecto
 
-### Analyzing the Bundle Size
+```
+app_web/
+├── public/                 # Archivos públicos
+│   ├── index.html         # HTML principal
+│   └── favicon.ico        # Icono de la aplicación
+├── src/                   # Código fuente
+│   ├── App.js            # Componente principal
+│   ├── App.css           # Estilos personalizados
+│   ├── index.js          # Punto de entrada
+│   ├── index.css         # Estilos base
+│   └── languages/        # Archivos de traducción
+│       ├── es.json       # Español
+│       ├── en.json       # Inglés
+│       └── ...           # Otros idiomas
+├── package.json           # Dependencias y scripts
+└── tailwind.config.js     # Configuración de Tailwind CSS
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## 🎯 Funcionalidades Clave
 
-### Making a Progressive Web App
+### Sistema de Navegación
+- **Navegación Principal**: Home, About, Services, Manuals, Community, Contact
+- **Selector de Idioma**: Cambio dinámico entre idiomas
+- **Navegación Responsiva**: Menú adaptativo para móviles
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Formularios Inteligentes
+- **Validación en Tiempo Real**: Verificación de campos requeridos
+- **Formulario Básico**: Registro rápido para donantes
+- **Formulario Extendido**: Información detallada para organizaciones
+- **Manejo de Estado**: Gestión eficiente de datos del formulario
 
-### Advanced Configuration
+### Sistema de Filtros
+- **Filtros por Ubicación**: País y ciudad
+- **Filtros por ODS**: Objetivos de Desarrollo Sostenible
+- **Filtros por Población**: Población objetivo
+- **Filtros Combinados**: Múltiples criterios simultáneos
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 🚀 Despliegue
 
-### Deployment
+### Desarrollo Local
+```bash
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Producción
+```bash
+npm run build
+```
 
-### `npm run build` fails to minify
+### Servidor de Producción
+Los archivos generados en `build/` pueden ser servidos por cualquier servidor web estático.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## 📞 Contacto
+
+- **Proyecto**: CooLab
+- **Equipo**: COO-LAB
+- **Email**: [tu-email@ejemplo.com]
+- **Website**: [URL_DEL_PROYECTO]
+
+## 🙏 Agradecimientos
+
+- React Team por el framework
+- Tailwind CSS por el sistema de diseño
+- Comunidad de desarrolladores open source
+- Organizaciones sociales que inspiran este proyecto
+
+---
+
+**CooLab** - Conectando Impacto, Transformando Comunidades 🌟
