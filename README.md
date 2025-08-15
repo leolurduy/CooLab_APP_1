@@ -2,266 +2,342 @@
 
 ## 🌟 Descripción
 
-CooLab es una plataforma innovadora que conecta donantes con organizaciones sociales en América Latina, facilitando el impacto positivo en comunidades vulnerables y proyectos sostenibles. Nuestra misión es crear puentes de colaboración para un futuro más justo y sostenible.
+CooLab es una plataforma innovadora que conecta organizaciones sociales, donantes y receptores en América Latina y el mundo. La plataforma facilita la colaboración y el impacto social a través de un sistema de mapeo interactivo, formularios de conexión y gestión de proyectos sociales.
 
 ## ✨ Características Principales
 
-### 🎯 Para Donantes
-- **Registro Simplificado**: Formulario fácil de completar con información básica
-- **Descubrimiento de Organizaciones**: Encuentra organizaciones confiables cerca de ti
-- **Filtros Avanzados**: Busca por ODS, población objetivo y ubicación
-- **Mapa Interactivo**: Visualiza organizaciones en un mapa intuitivo
+### 🗺️ **Mapa Interactivo Profesional**
+- **Leaflet + MapTiler**: Mapa interactivo de alta calidad con tiles profesionales
+- **Múltiples Estilos**: Calles, Básico, Híbrido, Satélite, Outdoor, Voyager
+- **Marcadores Dinámicos**: Visualización de organizaciones con información detallada
+- **Filtros Avanzados**: Búsqueda por país, ciudad, ODS y población objetivo
+- **Centrado en América Latina**: Configuración optimizada para la región
 
-### 🏢 Para Organizaciones
-- **Perfil Completo**: Registra tu organización con información detallada
-- **Formulario Extendido**: Opción para incluir proyectos y documentación
-- **Visibilidad Internacional**: Presenta tu trabajo al mundo
-- **Conexión Directa**: Recibe donaciones y colaboraciones
+### 🔗 **Sistema de Conexión**
+- **Formulario de Donantes**: Registro de organizaciones que ofrecen recursos
+- **Formulario de Receptores**: Solicitudes de proyectos y necesidades
+- **Matching Inteligente**: Conexión automática basada en criterios
 
-### 🗺️ Mapa Interactivo
-- **Filtros por Ubicación**: País, ciudad, ODS y población objetivo
-- **Información Detallada**: Perfiles completos de cada organización
-- **Contacto Directo**: Información de contacto y proyectos
-- **Visualización en Tiempo Real**: Impacto social y ambiental actualizado
+### 🌍 **Internacionalización**
+- **8 Idiomas**: Español, Inglés, Francés, Italiano, Japonés, Coreano, Portugués, Ruso, Chino
+- **Interfaz Adaptativa**: Cambio dinámico de idioma en tiempo real
 
-## 🚀 Instalación y Configuración
+### 📱 **Diseño Responsivo**
+- **Mobile-First**: Optimizado para dispositivos móviles
+- **Tailwind CSS**: Sistema de diseño moderno y escalable
+- **Componentes Reutilizables**: Arquitectura modular y mantenible
 
-### Prerrequisitos
-- Node.js (versión 16 o superior)
-- npm (incluido con Node.js)
+## 🚀 **Instalación y Configuración**
 
-### Pasos de Instalación
+### **Prerrequisitos**
+- Node.js 16+ 
+- npm o yarn
+- Cuenta en Supabase
+- Cuenta en MapTiler (gratuita)
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone [URL_DEL_REPOSITORIO]
-   cd app_web
-   ```
-
-2. **Instalar dependencias**
-   ```bash
-   npm install
-   npm install leaflet react-leaflet @supabase/supabase-js
-   ```
-
-3. **Configurar variables de entorno (.env)**
-   Crea un archivo `.env` en la raíz del proyecto con:
-   ```env
-   REACT_APP_SUPABASE_URL=tu_url_de_supabase
-   REACT_APP_SUPABASE_ANON_KEY=tu_clave_anonima
-   REACT_APP_MAPTILER_KEY=tu_api_key_de_maptiler
-   ```
-
-4. **Configurar Supabase (PostgreSQL)**
-   - Crea el proyecto en Supabase y una tabla `organizations`:
-   ```sql
-   CREATE TABLE organizations (
-     id SERIAL PRIMARY KEY,
-     name VARCHAR(255) NOT NULL,
-     country VARCHAR(100) NOT NULL,
-     city VARCHAR(100) NOT NULL,
-     address TEXT,
-     lat DECIMAL(10,8),
-     lng DECIMAL(11,8),
-     ods INTEGER[],
-     targetPopulation VARCHAR(100)[],
-     socialObject TEXT,
-     contact JSONB,
-     projects JSONB,
-     created_at TIMESTAMP DEFAULT NOW()
-   );
-   ```
-
-5. **Configurar MapTiler (tiles del mapa)**
-   - Crea cuenta gratuita en `https://www.maptiler.com/` y copia tu API Key en `.env`.
-
-6. **Habilitar CSS de Leaflet**
-   - Asegúrate de que `public/index.html` incluya:
-   ```html
-   <link
-     rel="stylesheet"
-     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""
-   />
-   ```
-
-7. **Iniciar la aplicación en modo desarrollo**
-   ```bash
-   npm start
-   ```
-
-4. **Abrir en el navegador**
-   La aplicación se abrirá automáticamente en `http://localhost:3000`
-
-### Scripts Disponibles
-
-- `npm start` - Inicia la aplicación en modo desarrollo
-- `npm build` - Construye la aplicación para producción
-- `npm test` - Ejecuta las pruebas
-- `npm eject` - Expone la configuración de webpack (irreversible)
-
-## 🎨 Tecnologías Utilizadas
-
-- **Frontend**: React 19.1.1
-- **Estilos**: Tailwind CSS 3.4.17
-- **Iconos**: SVG inline
-- **Internacionalización**: Sistema de archivos JSON
-- **Mapas**: Leaflet + React-Leaflet + MapTiler
-- **Base de datos**: Supabase (PostgreSQL)
-- **Responsive Design**: Mobile-first approach
-
-## 🌍 Idiomas Soportados
-
-- 🇪🇸 Español (por defecto)
-- 🇬🇧 Inglés
-- 🇵🇹 Portugués
-- 🇫🇷 Francés
-- 🇮🇹 Italiano
-- 🇯🇵 Japonés
-- 🇷🇺 Ruso
-- 🇰🇷 Coreano
-- 🇨🇳 Chino
-
-## 📱 Características Responsivas
-
-- **Mobile-First**: Diseño optimizado para dispositivos móviles
-- **Adaptativo**: Se adapta a diferentes tamaños de pantalla
-- **Touch-Friendly**: Interfaz optimizada para pantallas táctiles
-- **Accesibilidad**: Cumple con estándares de accesibilidad web
-
-## 🔧 Estructura del Proyecto
-
-```
-app_web/
-├── public/                 # Archivos públicos
-│   ├── index.html         # HTML principal
-│   └── favicon.ico        # Icono de la aplicación
-├── src/                   # Código fuente
-│   ├── App.js            # Componente principal
- │   ├── components/
- │   │   └── Mapa.js       # Componente del mapa (Leaflet)
- │   ├── lib/
- │   │   └── supabaseClient.js  # Cliente Supabase
-│   ├── App.css           # Estilos personalizados
-│   ├── index.js          # Punto de entrada
-│   ├── index.css         # Estilos base
-│   └── languages/        # Archivos de traducción
-│       ├── es.json       # Español
-│       ├── en.json       # Inglés
-│       └── ...           # Otros idiomas
-├── package.json           # Dependencias y scripts
-└── tailwind.config.js     # Configuración de Tailwind CSS
+### **1. Clonar el Repositorio**
+```bash
+git clone <tu-repositorio>
+cd app_web
 ```
 
-## 🎯 Funcionalidades Clave
+### **2. Instalar Dependencias**
+```bash
+npm install
+npm install leaflet react-leaflet @supabase/supabase-js
+```
 
-### Sistema de Navegación
-- **Navegación Principal**: Home, About, Services, Manuals, Community, Contact
-- **Selector de Idioma**: Cambio dinámico entre idiomas
-- **Navegación Responsiva**: Menú adaptativo para móviles
+### **3. Configurar Variables de Entorno**
+Crea un archivo `.env` en la raíz del proyecto:
 
-### Formularios Inteligentes
-- **Validación en Tiempo Real**: Verificación de campos requeridos
-- **Formulario Básico**: Registro rápido para donantes
-- **Formulario Extendido**: Información detallada para organizaciones
-- **Manejo de Estado**: Gestión eficiente de datos del formulario
+```env
+REACT_APP_SUPABASE_URL=tu_url_de_supabase_aqui
+REACT_APP_SUPABASE_ANON_KEY=tu_clave_anonima_de_supabase_aqui
+REACT_APP_MAPTILER_KEY=tu_api_key_de_maptiler_aqui
+```
 
-### Sistema de Filtros
-- **Filtros por Ubicación**: País y ciudad
-- **Filtros por ODS**: Objetivos de Desarrollo Sostenible
-- **Filtros por Población**: Población objetivo
-- **Filtros Combinados**: Múltiples criterios simultáneos
+### **4. Configurar Supabase**
+1. Ve a [Supabase](https://supabase.com/)
+2. Crea un nuevo proyecto
+3. Crea la tabla `organizations` con la siguiente estructura:
 
-## 🚀 Despliegue
+```sql
+CREATE TABLE organizations (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  country VARCHAR(100) NOT NULL,
+  city VARCHAR(100) NOT NULL,
+  address TEXT,
+  lat DECIMAL(10, 8),
+  lng DECIMAL(11, 8),
+  ods INTEGER[],
+  targetPopulation VARCHAR(100)[],
+  socialObject TEXT,
+  contact JSONB,
+  projects JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
 
-### Desarrollo Local
+### **5. Configurar MapTiler**
+1. Ve a [MapTiler](https://www.maptiler.com/)
+2. Crea una cuenta gratuita
+3. Obtén tu API Key
+4. Agrega la API Key en tu archivo `.env`
+
+**📖 Ver instrucciones detalladas en [MAPTILER_SETUP.md](./MAPTILER_SETUP.md)**
+
+### **6. Ejecutar la Aplicación**
 ```bash
 npm start
 ```
 
-### Producción
+La aplicación estará disponible en `http://localhost:3000`
+
+## 🏗️ **Arquitectura del Proyecto**
+
+### **Estructura de Archivos**
+```
+src/
+├── components/          # Componentes React reutilizables
+│   ├── Mapa.js        # Componente del mapa interactivo con Leaflet + MapTiler
+│   └── ...
+├── config/             # Archivos de configuración
+│   └── maptiler.js    # Configuración de MapTiler
+├── lib/               # Utilidades y clientes de base de datos
+│   ├── supabaseClient.js  # Cliente de Supabase
+│   └── ...
+├── languages/         # Archivos de internacionalización
+│   ├── es.json       # Español
+│   ├── en.json       # Inglés
+│   └── ...
+├── App.js            # Componente principal de la aplicación
+├── App.css           # Estilos personalizados
+└── index.js          # Punto de entrada
+```
+
+### **Componentes Principales**
+
+#### **Mapa.js**
+- **Propósito**: Renderiza el mapa interactivo con Leaflet + MapTiler
+- **Funcionalidades**:
+  - Visualización de organizaciones como marcadores
+  - Popups informativos con detalles de cada organización
+  - Cambio dinámico de estilos de mapa (Calles, Satélite, Híbrido, etc.)
+  - Integración con el estado global de la aplicación
+  - Carga de datos desde Supabase o datos locales
+
+#### **maptiler.js**
+- **Propósito**: Configuración centralizada de MapTiler
+- **Funcionalidades**:
+  - Gestión de API keys
+  - Configuración de estilos de mapa
+  - Validación de configuración
+  - Funciones helper para URLs y atribuciones
+
+#### **supabaseClient.js**
+- **Propósito**: Cliente para interactuar con la base de datos Supabase
+- **Funciones**:
+  - `cargarOrganizaciones()`: Obtiene todas las organizaciones
+  - `crearOrganizacion()`: Crea una nueva organización
+  - `actualizarOrganizacion()`: Actualiza datos existentes
+  - `eliminarOrganizacion()`: Elimina organizaciones
+
+### **Flujo de Datos**
+1. **Carga Inicial**: Los datos se cargan desde Supabase al montar el componente
+2. **Filtrado**: Los filtros se aplican en tiempo real
+3. **Visualización**: El mapa se actualiza automáticamente con los resultados filtrados
+4. **Selección**: Al hacer clic en un marcador, se selecciona la organización
+
+## 🗺️ **Características del Mapa**
+
+### **Estilos Disponibles**
+- **Streets**: Mapa de calles detallado (por defecto)
+- **Basic**: Mapa básico y limpio
+- **Hybrid**: Combinación de calles y satélite
+- **Satellite**: Vista satelital
+- **Outdoor**: Ideal para actividades al aire libre
+- **Voyager**: Estilo de exploración
+
+### **Funcionalidades Avanzadas**
+- **Zoom Control**: Control de zoom personalizado
+- **Marcadores Interactivos**: Popups con información detallada
+- **Navegación Suave**: Movimiento fluido por el mapa
+- **Responsive**: Se adapta a diferentes tamaños de pantalla
+
+## 🎨 **Tecnologías Utilizadas**
+
+### **Frontend**
+- **React 18**: Biblioteca de interfaz de usuario
+- **Tailwind CSS**: Framework de CSS utilitario
+- **Leaflet**: Biblioteca de mapas interactivos
+- **React-Leaflet**: Integración de Leaflet con React
+
+### **Mapas y Tiles**
+- **MapTiler**: Servicio de tiles de alta calidad
+- **OpenStreetMap**: Datos geográficos base
+- **Leaflet CSS**: Estilos para el mapa
+
+### **Backend y Base de Datos**
+- **Supabase**: Backend-as-a-Service con PostgreSQL
+- **PostgreSQL**: Base de datos relacional robusta
+- **REST API**: API RESTful para operaciones CRUD
+
+### **Herramientas de Desarrollo**
+- **Create React App**: Configuración inicial del proyecto
+- **ESLint**: Linting de código
+- **Git**: Control de versiones
+
+## 📊 **Base de Datos**
+
+### **Tabla `organizations`**
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | SERIAL | Identificador único |
+| `name` | VARCHAR(255) | Nombre de la organización |
+| `country` | VARCHAR(100) | País de ubicación |
+| `city` | VARCHAR(100) | Ciudad de ubicación |
+| `address` | TEXT | Dirección completa |
+| `lat` | DECIMAL(10,8) | Latitud para el mapa |
+| `lng` | DECIMAL(11,8) | Longitud para el mapa |
+| `ods` | INTEGER[] | Array de ODS (Objetivos de Desarrollo Sostenible) |
+| `targetPopulation` | VARCHAR(100)[] | Población objetivo |
+| `socialObject` | TEXT | Objeto social de la organización |
+| `contact` | JSONB | Información de contacto |
+| `projects` | JSONB | Proyectos de la organización |
+
+### **Ejemplo de Datos**
+```json
+{
+  "name": "Fundación CooLab",
+  "country": "México",
+  "city": "Ciudad de México",
+  "lat": 19.4326,
+  "lng": -99.1332,
+  "ods": [1, 4, 8],
+  "targetPopulation": ["Jóvenes", "Mujeres"],
+  "socialObject": "Promover la cooperación social",
+  "contact": {
+    "email": "info@coo-lab.org",
+    "phone": "+52 55 1234 5678",
+    "website": "https://coo-lab.org"
+  }
+}
+```
+
+## 🚀 **Despliegue**
+
+### **Despliegue en Producción**
 ```bash
 npm run build
 ```
 
-### Servidor de Producción
-Los archivos generados en `build/` pueden ser servidos por cualquier servidor web estático.
+### **Plataformas Recomendadas**
+- **Vercel**: Despliegue automático desde GitHub
+- **Netlify**: Hosting estático con funciones serverless
+- **AWS S3 + CloudFront**: Solución escalable para producción
 
-## 🤝 Contribución
+### **Variables de Entorno en Producción**
+Asegúrate de configurar las variables de entorno en tu plataforma de hosting:
+- `REACT_APP_SUPABASE_URL`
+- `REACT_APP_SUPABASE_ANON_KEY`
+- `REACT_APP_MAPTILER_KEY`
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+## 🔮 **Escalabilidad Futura**
 
-## 📄 Licencia
+### **Arquitectura Híbrida Recomendada**
+- **PostgreSQL (Supabase)**: Para datos estructurados como organizaciones, usuarios, ODS
+- **MongoDB Atlas**: Para datos flexibles como archivos adjuntos, comentarios, logs
+
+### **Integración con MongoDB**
+```javascript
+// src/lib/mongoClient.js (para el futuro)
+import { MongoClient } from 'mongodb'
+
+const mongoUri = process.env.REACT_APP_MONGODB_URI
+const client = new MongoClient(mongoUri)
+
+export const connectMongo = async () => {
+  try {
+    await client.connect()
+    return client.db('coo-lab')
+  } catch (error) {
+    console.error('Error conectando a MongoDB:', error)
+    return null
+  }
+}
+```
+
+### **Casos de Uso para MongoDB**
+- **Archivos Adjuntos**: Documentos, imágenes, videos
+- **Comentarios y Reviews**: Sistema de feedback de usuarios
+- **Logs de Actividad**: Historial de interacciones
+- **Datos No Estructurados**: Contenido dinámico y flexible
+
+## 🔒 **Seguridad**
+
+### **Buenas Prácticas**
+- **Claves Anónimas**: Solo usa claves anónimas de Supabase en el frontend
+- **Variables de Entorno**: Nunca expongas claves secretas en el código
+- **Validación de Datos**: Valida todos los inputs del usuario
+- **HTTPS**: Usa siempre conexiones seguras en producción
+
+### **Archivos de Configuración**
+```gitignore
+# .gitignore
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+node_modules/
+build/
+```
+
+## 🧪 **Testing**
+
+### **Ejecutar Tests**
+```bash
+npm test
+```
+
+### **Cobertura de Código**
+```bash
+npm test -- --coverage --watchAll=false
+```
+
+## 🤝 **Contribución**
+
+### **Flujo de Trabajo**
+1. Fork del repositorio
+2. Crear una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit de tus cambios (`git commit -am 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crear un Pull Request
+
+### **Estándares de Código**
+- Usar ESLint para mantener consistencia
+- Seguir las convenciones de React
+- Documentar funciones complejas
+- Escribir tests para nuevas funcionalidades
+
+## 📄 **Licencia**
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## 📞 Contacto
+## 📞 **Contacto**
 
-- **Proyecto**: CooLab
-- **Equipo**: COO-LAB
-- **Email**: [tu-email@ejemplo.com]
-- **Website**: [URL_DEL_PROYECTO]
+- **Email**: info@coo-lab.org
+- **Website**: https://coo-lab.org
+- **GitHub**: [tu-usuario/coo-lab](https://github.com/tu-usuario/coo-lab)
 
-## 🙏 Agradecimientos
+## 🙏 **Agradecimientos**
 
-- React Team por el framework
-- Tailwind CSS por el sistema de diseño
-- Comunidad de desarrolladores open source
-- Organizaciones sociales que inspiran este proyecto
-
----
-
-**CooLab** - Conectando Impacto, Transformando Comunidades 🌟
+- **Supabase** por proporcionar la infraestructura de backend
+- **MapTiler** por los tiles de mapas de alta calidad
+- **Leaflet** por la biblioteca de mapas interactivos
+- **Tailwind CSS** por el sistema de diseño utilitario
 
 ---
 
-## 🗺️ Integración del Mapa Interactivo (Paso a Paso)
-
-1) Instala dependencias:
-```bash
-npm install leaflet react-leaflet @supabase/supabase-js
-```
-
-2) Variables de entorno (`.env`):
-```env
-REACT_APP_SUPABASE_URL=tu_url_de_supabase
-REACT_APP_SUPABASE_ANON_KEY=tu_clave_anonima
-REACT_APP_MAPTILER_KEY=tu_api_key_de_maptiler
-```
-
-3) Archivos nuevos:
-- `src/lib/supabaseClient.js` (cliente Supabase + funciones CRUD)
-- `src/components/Mapa.js` (Leaflet + MapTiler + marcadores)
-
-4) Habilitar CSS Leaflet en `public/index.html`:
-```html
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""
-/> 
-```
-
-5) Integración en `src/App.js`:
-- Importa el mapa: `import Mapa from './components/Mapa'`
-- En la vista de mapa, renderiza:
-```jsx
-<Mapa organizations={filteredOrganizations} setSelectedOrg={setSelectedOrg} selectedOrg={selectedOrg} />
-```
-
-6) Reemplazar datos locales por Supabase:
-- Opcional: mover la carga inicial de organizaciones a un efecto que llame `cargarOrganizaciones()` y guarde en `organizations`.
-
-7) Seguridad:
-- Usa solo la clave anónima en el frontend.
-- No subir `.env` (agregar a `.gitignore`).
-
-8) Escalabilidad futura (MongoDB Atlas):
-- Mantener datos estructurados (organizaciones) en PostgreSQL (Supabase).
-- Usar MongoDB para adjuntos, comentarios y logs flexibles.
+**CooLab** - Conectando impacto social a través de la cooperación digital 🌟

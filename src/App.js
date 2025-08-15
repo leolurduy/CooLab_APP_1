@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { cargarOrganizaciones, testSupabaseConnection, crearOrganizacion, actualizarOrganizacion } from "./lib/supabaseClient";
 import Mapa from "./components/Mapa";
 
 // Importar todos los archivos de traducción
@@ -17,6 +18,7 @@ const App = () => {
   const [userType, setUserType] = useState(null);
   const [formData, setFormData] = useState({});
   const [language, setLanguage] = useState("es"); // Idioma por defecto
+  const [userProfile, setUserProfile] = useState({ name: "", email: "", phone: "", role: "user" });
 
   // Diccionario de traducciones
   const translations = { es, en, pt, fr, it, ja, ru, ko, zh };
@@ -98,6 +100,46 @@ const App = () => {
     }
   ]);
   
+  // Carga inicial desde Supabase sin romper el fallback local
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await cargarOrganizaciones();
+        if (Array.isArray(data) && data.length > 0) {
+          setOrganizations(data);
+        }
+      } catch (err) {
+        console.error("No se pudieron cargar organizaciones de Supabase:", err);
+      }
+    })();
+  }, []);
+
+  // Estado y verificación de conexión con Supabase
+  const [supabaseStatus, setSupabaseStatus] = useState({ ok: null, count: null, error: null });
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await testSupabaseConnection();
+        setSupabaseStatus({ ok: !!result.ok, count: result.count ?? null, error: result.ok ? null : result.error });
+      } catch (error) {
+        setSupabaseStatus({ ok: false, count: null, error });
+      }
+    })();
+  }, []);
+
+  const handleRefreshFromSupabase = async () => {
+    try {
+      const data = await cargarOrganizaciones();
+      if (Array.isArray(data) && data.length > 0) {
+        setOrganizations(data);
+      }
+      const result = await testSupabaseConnection();
+      setSupabaseStatus({ ok: !!result.ok, count: result.count ?? null, error: result.ok ? null : result.error });
+    } catch (error) {
+      console.error("Error refrescando desde Supabase:", error);
+    }
+  };
+  
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [filters, setFilters] = useState({
     country: "",
@@ -135,10 +177,20 @@ const App = () => {
     "Personas con discapacidad",
     "Indígenas",
     "Campesin@s",
-    "Medioambiente",
+    "Victimas de Violencia",
+    "Personas desaparecidas",
+    "Derechos Humanos",
+    "Deporte y Recreación",
+    "Educación y cultura",
+    "Salud (Física y Mental",
+    "Población Migrante",
+    "LGBTIQ+",
+    "Medioambiente y Cambio climático",
     "Animales",
     "Energías Renovables",
-    "Desarrollo económico"
+    "Pobreza y desigualdad",
+    "Desarollo ecoómico y emprendimiento"
+
   ];
 
   const handleInputChange = (e) => {
@@ -151,24 +203,42 @@ const App = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (userType === "donor") {
       setCurrentPage("map");
     } else if (userType === "receiver") {
+      const social = {
+        linkedin: formData.social_linkedin || "",
+        tiktok: formData.social_tiktok || "",
+        instagram: formData.social_instagram || "",
+        facebook: formData.social_facebook || "",
+        x: formData.social_x || "",
+        whatsapp: formData.social_whatsapp || "",
+      };
       const newOrg = {
         id: organizations.length + 1,
         ...formData,
         contact: {
           email: formData.email,
           phone: formData.phone,
-          website: formData.website
+          website: formData.website,
+          social
         },
         lat: Math.random() * 20 - 10,
         lng: Math.random() * 40 - 70
       };
+      try {
+        const saved = await crearOrganizacion(newOrg);
+        if (saved) {
+          setOrganizations([...organizations, saved]);
+        } else {
       setOrganizations([...organizations, newOrg]);
-      setCurrentPage("map");
+        }
+      } catch (_) {
+        setOrganizations([...organizations, newOrg]);
+      }
+      setCurrentPage("dashboard");
     }
   };
 
@@ -188,57 +258,240 @@ const App = () => {
     return countryMatch && cityMatch && odsMatch && populationMatch;
   });
 
+  // Editor de lista de proyectos (añadir/eliminar)
+  const ProjectListEditor = ({ onChange }) => {
+    const [projects, setProjects] = useState([
+      { title: "", description: "", city: "", address: "", beneficiaries: { direct: { men: "", women: "" }, indirect: { men: "", women: "" } }, photos: [], videos: [] }
+    ]);
+
+    const update = (next) => {
+      setProjects(next);
+      if (typeof onChange === 'function') onChange(next);
+    };
+
+    const addProject = () => update([...projects, { title: "", description: "", city: "", address: "", beneficiaries: { direct: { men: "", women: "" }, indirect: { men: "", women: "" } }, photos: [], videos: [] }]);
+    const removeProject = (idx) => update(projects.filter((_, i) => i !== idx));
+    const handleField = (idx, field, value) => {
+      const next = projects.map((p, i) => (i === idx ? { ...p, [field]: value } : p));
+      update(next);
+    };
+
+    const addMediaUrl = (idx, kind) => {
+      const url = prompt(kind === 'photos' ? 'URL de imagen (png/jpg/webp)' : 'URL de video (mp4/webm/ogg)');
+      if (!url) return;
+      const next = projects.map((p, i) => (
+        i === idx ? { ...p, [kind]: [...(p[kind] || []), url] } : p
+      ));
+      update(next);
+    };
+    const removeMediaAt = (idx, kind, mIdx) => {
+      const next = projects.map((p, i) => (
+        i === idx ? { ...p, [kind]: p[kind].filter((_, j) => j !== mIdx) } : p
+      ));
+      update(next);
+    };
+
+    return (
+      <div className="space-y-4">
+        {projects.map((p, idx) => (
+          <div key={idx} className="p-4 bg-white rounded-lg border border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Título del proyecto</label>
+                <input
+                  type="text"
+                  value={p.title}
+                  onChange={(e) => handleField(idx, 'title', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ej. Laboratorio Digital"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                <input
+                  type="text"
+                  value={p.description}
+                  onChange={(e) => handleField(idx, 'description', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Resumen breve del proyecto"
+                />
+              </div>
+            </div>
+            {/* Ubicación del proyecto */}
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">País</label>
+                <input type="text" value={p.country || ''} onChange={(e)=>handleField(idx,'country',e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="País" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ciudad/Municipio</label>
+                <input type="text" value={p.city || ''} onChange={(e)=>handleField(idx,'city',e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ciudad" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+                <input type="text" value={p.address || ''} onChange={(e)=>handleField(idx,'address',e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Dirección" />
+              </div>
+            </div>
+
+            {/* Beneficiarios */}
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 bg-gray-50 rounded border">
+                <span className="block text-sm font-medium text-gray-700 mb-2">Beneficiarios Directos</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" min="0" placeholder="Hombres" value={p.beneficiaries?.direct?.men || ''} onChange={(e)=>{
+                    const val = e.target.value; const next = { ...p.beneficiaries, direct: { ...(p.beneficiaries?.direct||{}), men: val } }; handleField(idx,'beneficiaries',next);
+                  }} className="px-3 py-2 border rounded" />
+                  <input type="number" min="0" placeholder="Mujeres" value={p.beneficiaries?.direct?.women || ''} onChange={(e)=>{
+                    const val = e.target.value; const next = { ...p.beneficiaries, direct: { ...(p.beneficiaries?.direct||{}), women: val } }; handleField(idx,'beneficiaries',next);
+                  }} className="px-3 py-2 border rounded" />
+                </div>
+              </div>
+              <div className="p-3 bg-gray-50 rounded border">
+                <span className="block text-sm font-medium text-gray-700 mb-2">Beneficiarios Indirectos</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" min="0" placeholder="Hombres" value={p.beneficiaries?.indirect?.men || ''} onChange={(e)=>{
+                    const val = e.target.value; const next = { ...p.beneficiaries, indirect: { ...(p.beneficiaries?.indirect||{}), men: val } }; handleField(idx,'beneficiaries',next);
+                  }} className="px-3 py-2 border rounded" />
+                  <input type="number" min="0" placeholder="Mujeres" value={p.beneficiaries?.indirect?.women || ''} onChange={(e)=>{
+                    const val = e.target.value; const next = { ...p.beneficiaries, indirect: { ...(p.beneficiaries?.indirect||{}), women: val } }; handleField(idx,'beneficiaries',next);
+                  }} className="px-3 py-2 border rounded" />
+                </div>
+              </div>
+            </div>
+
+            {/* Media editor */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Fotos (URLs)</label>
+                  <button type="button" onClick={() => addMediaUrl(idx, 'photos')} className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">Añadir foto</button>
+                </div>
+                <div className="space-y-2">
+                  {(p.photos || []).map((url, mIdx) => (
+                    <div key={mIdx} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <img src={url} alt="foto" className="w-10 h-10 object-cover rounded" onError={(e)=>{e.currentTarget.style.display='none'}} />
+                        <span className="truncate mr-2 max-w-[220px]">{url}</span>
+                      </div>
+                      <button type="button" onClick={() => removeMediaAt(idx, 'photos', mIdx)} className="px-2 py-0.5 bg-red-50 text-red-600 rounded hover:bg-red-100">Quitar</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Videos (URLs)</label>
+                  <button type="button" onClick={() => addMediaUrl(idx, 'videos')} className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">Añadir video</button>
+                </div>
+                <div className="space-y-2">
+                  {(p.videos || []).map((url, mIdx) => (
+                    <div key={mIdx} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <video className="w-14 h-10 rounded" src={url} onError={(e)=>{e.currentTarget.style.display='none'}} />
+                        <span className="truncate mr-2 max-w-[220px]">{url}</span>
+                      </div>
+                      <button type="button" onClick={() => removeMediaAt(idx, 'videos', mIdx)} className="px-2 py-0.5 bg-red-50 text-red-600 rounded hover:bg-red-100">Quitar</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => removeProject(idx)}
+                className="px-3 py-1 text-sm rounded bg-red-50 text-red-600 hover:bg-red-100"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={addProject}
+            className="px-4 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Añadir proyecto
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const Navigation = () => (
     <nav className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6">
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
-                <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-14 h-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
-              <span className="font-bold text-3xl">CooLab</span>
+              <span className="font-bold text-4xl">CooLab</span>
             </div>
+            {/* Estado Supabase compactado junto al logo */}
+            <button
+              onClick={handleRefreshFromSupabase}
+              title="Estado de datos (click para refrescar)"
+              className={`ml-4 px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${
+                supabaseStatus.ok === true
+                  ? "bg-green-600 text-white border-green-500 hover:bg-green-700"
+                  : supabaseStatus.ok === false
+                  ? "bg-red-600 text-white border-red-500 hover:bg-red-700"
+                  : "bg-gray-500 text-white border-gray-400 hover:bg-gray-600"
+              }`}
+            >
+              {supabaseStatus.ok ? "OK_data" : "NO-OK_data"}
+            </button>
           </div>
-          <div className="flex items-center space-x-10">
+          <div className="flex items-center space-x-5">
+            {/* Inicio (separado del botón de estado) */}
             <button
               onClick={() => setCurrentPage("home")}
-              className={`px-4 py-3 rounded-md text-base font-medium transition-colors ${currentPage === "home" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
+              className={`ml-6 px-4 py-3 rounded-md text-base font-medium transition-colors whitespace-nowrap ${currentPage === "home" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
             >
               {t.home}
             </button>
+            {/* Perfil */}
             <button
-              onClick={() => setCurrentPage("about")}
-              className={`px-4 py-3 rounded-md text-base font-medium transition-colors ${currentPage === "about" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
+              onClick={() => setCurrentPage("dashboard")}
+              className={`px-4 py-3 rounded-md text-base font-medium transition-colors whitespace-nowrap ${currentPage === "dashboard" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
             >
-              {t.about}
+              Perfil
             </button>
-            <button
-              onClick={() => setCurrentPage("services")}
-              className={`px-4 py-3 rounded-md text-base font-medium transition-colors ${currentPage === "services" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
-            >
-              {t.services}
-            </button>
+            {/* Manuales */}
             <button
               onClick={() => setCurrentPage("manuals")}
-              className={`px-4 py-3 rounded-md text-base font-medium transition-colors ${currentPage === "manuals" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
+              className={`px-4 py-3 rounded-md text-base font-medium transition-colors whitespace-nowrap ${currentPage === "manuals" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
             >
               {t.manuals}
             </button>
+            {/* Servicios */}
+            <button
+              onClick={() => setCurrentPage("services")}
+              className={`px-4 py-3 rounded-md text-base font-medium transition-colors whitespace-nowrap ${currentPage === "services" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
+            >
+              {t.services}
+            </button>
+            {/* Comunidad */}
             <button
               onClick={() => setCurrentPage("community")}
-              className={`px-4 py-3 rounded-md text-base font-medium transition-colors ${currentPage === "community" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
+              className={`px-4 py-3 rounded-md text-base font-medium transition-colors whitespace-nowrap ${currentPage === "community" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
             >
               {t.community}
             </button>
+            {/* Contacto */}
             <button
               onClick={() => setCurrentPage("contact")}
-              className={`px-4 py-3 rounded-md text-base font-medium transition-colors ${currentPage === "contact" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
+              className={`px-4 py-3 rounded-md text-base font-medium transition-colors whitespace-nowrap ${currentPage === "contact" ? "bg-white bg-opacity-20" : "hover:bg-white hover:bg-opacity-10"}`}
             >
               {t.contact}
             </button>
+            {/* Removidos duplicados abajo */}
             <div className="relative">
               <select
                 value={language}
@@ -312,20 +565,48 @@ const App = () => {
             />
           </div>
           
+          {/* ODS Relacionados (múltiple) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Intereses</label>
-            <select
-              name="interests"
+            <label className="block text-sm font-medium text-gray-700 mb-2">ODS Relacionados (múltiple)</label>
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              {odsOptions.map((ods) => (
+                <label key={ods} className="flex items-center space-x-2 text-sm">
+                  <span className="inline-flex w-4 h-4 bg-indigo-200 rounded-sm items-center justify-center">
+                    <svg className="w-3 h-3 text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"/></svg>
+                  </span>
+            <input
+                    type="checkbox"
+                    name="donorOds"
+                    value={ods}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-            >
-              <option value="">Selecciona tus intereses</option>
-              <option value="educacion">Educación</option>
-              <option value="medioambiente">Medio Ambiente</option>
-              <option value="salud">Salud</option>
-              <option value="tecnologia">Tecnología</option>
-              <option value="desarrollo">Desarrollo Comunitario</option>
-            </select>
+                    className="text-indigo-600 rounded focus:ring-indigo-500"
+            />
+                  <span className="text-gray-700">{ods}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          {/* Temáticas de Interés (múltiple) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Temáticas de Interés (múltiple)</label>
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              {targetPopulationOptions.map((topic) => (
+                <label key={topic} className="flex items-center space-x-2 text-sm">
+                  <span className="inline-flex w-4 h-4 bg-green-200 rounded-sm items-center justify-center">
+                    <svg className="w-3 h-3 text-green-700" viewBox="0 0 20 20" fill="currentColor"><rect x="4" y="4" width="12" height="12" rx="2"/></svg>
+                  </span>
+            <input
+                    type="checkbox"
+                    name="donorTopics"
+                    value={topic}
+              onChange={handleInputChange}
+                    className="text-green-600 rounded focus:ring-green-500"
+            />
+                  <span className="text-gray-700">{topic}</span>
+                </label>
+              ))}
+            </div>
           </div>
           
           <button
@@ -358,13 +639,13 @@ const App = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.receiver_title}</h2>
-          <p className="text-gray-600">{t.receiver} {t.welcome.toLowerCase()}</p>
+          <p className="text-gray-700 text-sm">Es obligatorio el formulario Básico, pero para mayor visibilidad sugerimos el formulario extendido</p>
         </div>
         
         <div className="flex justify-center mb-6">
           <button
             onClick={() => setShowExtendedForm(false)}
-            className={`px-6 py-3 rounded-l-lg font-medium transition-all ${
+            className={`px-8 py-4 text-base rounded-l-lg font-medium transition-all ${
               !showExtendedForm 
                 ? "bg-green-600 text-white" 
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -374,7 +655,7 @@ const App = () => {
           </button>
           <button
             onClick={() => setShowExtendedForm(true)}
-            className={`px-6 py-3 rounded-r-lg font-medium transition-all ${
+            className={`px-8 py-4 text-base rounded-r-lg font-medium transition-all ${
               showExtendedForm 
                 ? "bg-blue-600 text-white" 
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -387,7 +668,7 @@ const App = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t.name}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.name} <span className="text-red-600">*</span></label>
               <input
                 type="text"
                 name="name"
@@ -399,7 +680,7 @@ const App = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t.country}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.country} <span className="text-red-600">*</span></label>
               <input
                 type="text"
                 name="country"
@@ -411,7 +692,7 @@ const App = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{t.city}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.city} <span className="text-red-600">*</span></label>
               <input
                 type="text"
                 name="city"
@@ -432,13 +713,86 @@ const App = () => {
                 placeholder={t.address}
               />
             </div>
+            {/* Persona de contacto (obligatoria) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Persona de contacto <span className="text-red-600">*</span></label>
+              <input
+                type="text"
+                name="contactPerson"
+                required
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                placeholder="Nombre de la persona de contacto"
+              />
+          </div>
+            {/* Cargo (opcional) */}
+          <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
+                  <input
+                type="text"
+                name="contactRole"
+                    onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                placeholder="Cargo o rol"
+              />
+            </div>
+            {/* Email obligatorio (básico) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.email} <span className="text-red-600">*</span></label>
+              <input
+                type="email"
+                name="email"
+                required
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                placeholder="contacto@organizacion.org"
+              />
+            </div>
+            {/* Teléfono obligatorio (básico) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.phone}</label>
+              <input
+                type="tel"
+                name="phone"
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                placeholder="+57 300 123 4567"
+              />
+            </div>
+            {/* Sitio web obligatorio (básico) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sitio web</label>
+              <input
+                type="url"
+                name="website"
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                placeholder="www.tuorganizacion.org"
+              />
+            </div>
+          </div>
+          
+          {/* Objeto social (obligatorio, máximo 50 palabras) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.social_object} (máximo 50 palabras) <span className="text-red-600">*</span></label>
+            <textarea
+              name="socialObject"
+              required
+              rows="3"
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              placeholder={t.social_object}
+            />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.ods}</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {odsOptions.slice(0, 8).map((ods) => (
+            <label className="block text-sm font-medium text-gray-700 mb-2">ODS Relacionados (múltiple)</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto">
+              {odsOptions.map((ods) => (
                 <label key={ods} className="flex items-center space-x-2 text-sm">
+                  <span className="inline-flex w-4 h-4 bg-indigo-200 rounded-sm items-center justify-center">
+                    <svg className="w-3 h-3 text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"/></svg>
+                  </span>
                   <input
                     type="checkbox"
                     value={ods}
@@ -452,23 +806,16 @@ const App = () => {
             </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.social_object}</label>
-            <textarea
-              name="socialObject"
-              required
-              rows="3"
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-              placeholder={t.social_object}
-            />
-          </div>
+          
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t.target_population}</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {targetPopulationOptions.slice(0, 6).map((pop) => (
+            <label className="block text-sm font-medium text-gray-700 mb-2">Temáticas de Interés (múltiple)</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto">
+              {targetPopulationOptions.map((pop) => (
                 <label key={pop} className="flex items-center space-x-2 text-sm">
+                  <span className="inline-flex w-4 h-4 bg-green-200 rounded-sm items-center justify-center">
+                    <svg className="w-3 h-3 text-green-700" viewBox="0 0 20 20" fill="currentColor"><rect x="4" y="4" width="12" height="12" rx="2"/></svg>
+                  </span>
                   <input
                     type="checkbox"
                     value={pop}
@@ -486,61 +833,39 @@ const App = () => {
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.projects}</h3>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.projects}</label>
-                  <div className="space-y-3">
+              <ProjectListEditor onChange={(projects) => setFormData(prev => ({ ...prev, projects }))} />
+              
+              <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn (URL)</label>
                     <input
-                      type="text"
-                      name="projectTitle"
-                      placeholder="Título del proyecto"
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                    <textarea
-                      name="projectDescription"
-                      placeholder="Descripción del proyecto"
-                      rows="2"
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t.email}</label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="contacto@organizacion.org"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t.phone}</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      required
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="+57 300 123 4567"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t.contact_info}</label>
-                  <input
                     type="url"
-                    name="website"
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="www.tuorganizacion.org"
+                    name="social_linkedin"
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://www.linkedin.com/company/tu-organizacion"
                   />
+                  {/* Redes sociales opcionales */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">TikTok (URL)</label>
+                      <input type="url" name="social_tiktok" onChange={handleInputChange} className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="https://www.tiktok.com/@tuorganizacion" />
+                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Instagram (URL)</label>
+                      <input type="url" name="social_instagram" onChange={handleInputChange} className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="https://instagram.com/tuorganizacion" />
+                </div>
+                  <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Facebook (URL)</label>
+                      <input type="url" name="social_facebook" onChange={handleInputChange} className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="https://facebook.com/tuorganizacion" />
+                  </div>
+                  <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">X/Twitter (URL)</label>
+                      <input type="url" name="social_x" onChange={handleInputChange} className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="https://twitter.com/tuorganizacion" />
+                  </div>
+                <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp (URL de invitación)</label>
+                      <input type="url" name="social_whatsapp" onChange={handleInputChange} className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500" placeholder="https://wa.me/+573001234567" />
+                    </div>
                 </div>
               </div>
             </div>
@@ -551,7 +876,7 @@ const App = () => {
               type="submit"
               className="flex-1 bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 px-4 rounded-lg font-medium hover:from-green-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
             >
-              {t.receiver} → {t.map_view}
+              Finalizar formulario - Ir a perfil
             </button>
             <button
               type="button"
@@ -1013,7 +1338,7 @@ const App = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{t.manuals}</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Recursos completos para aprovechar al máximo nuestra plataforma, tanto para donantes como para organizaciones. 
+            Recursos completos para aprovechar al máximo nuestra plataforma, tanto para donantes como para organizaciones.
             Guías paso a paso, mejores prácticas y casos de éxito para maximizar tu impacto en la comunidad.
           </p>
         </div>
@@ -1035,6 +1360,306 @@ const App = () => {
     </div>
   );
 
+  // Dashboard: perfiles de usuario y organización
+  const DashboardPage = () => {
+    const [activeTab, setActiveTab] = useState('user'); // 'user' | 'org'
+    const [editableUser, setEditableUser] = useState(userProfile);
+    const [editableOrg, setEditableOrg] = useState(() => {
+      // Si hay una org seleccionada, usar esa; sino, primera org del estado como placeholder
+      return organizations[0] || {
+        name: '', country: '', city: '', address: '', contactPerson: '', contactRole: '',
+        ods: [], targetPopulation: [], socialObject: '', contact: { email: '', phone: '', website: '', social: { linkedin: '', tiktok: '', instagram: '', facebook: '', x: '', whatsapp: '' } },
+        projects: [], lat: 0, lng: 0
+      };
+    });
+
+    const saveUser = () => {
+      setUserProfile(editableUser);
+      alert('Perfil de usuario actualizado');
+    };
+    const deleteUser = () => {
+      const ok = window.confirm('¿Eliminar tu perfil de usuario? Esta acción no se puede deshacer.');
+      if (!ok) return;
+      setUserProfile({ name: '', email: '', phone: '', role: 'user' });
+      alert('Perfil de usuario eliminado');
+    };
+
+    const saveOrg = async () => {
+      // Actualizar la primera organización como ejemplo; idealmente usar auth/orgId
+      if (!editableOrg || !editableOrg.name) {
+        alert('Completa al menos el nombre de la organización');
+        return;
+      }
+      const next = [...organizations];
+      if (next.length > 0) {
+        next[0] = { ...next[0], ...editableOrg };
+      } else {
+        next.push({ id: 1, ...editableOrg });
+      }
+      setOrganizations(next);
+      try {
+        if (editableOrg.id) {
+          await actualizarOrganizacion(editableOrg.id, editableOrg);
+        }
+      } catch (_) {}
+      alert('Organización actualizada');
+    };
+    const deleteOrgProject = (idx) => {
+      const next = { ...editableOrg, projects: (editableOrg.projects || []).filter((_, i) => i !== idx) };
+      setEditableOrg(next);
+    };
+    const addOrgProject = () => {
+      const next = { ...editableOrg, projects: [...(editableOrg.projects || []), { title: '', description: '', photos: [], videos: [] }] };
+      setEditableOrg(next);
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">Panel de Usuario</h1>
+
+          <div className="bg-white rounded-xl shadow-md p-4 mb-6 flex space-x-2">
+            <button onClick={() => setActiveTab('user')} className={`px-4 py-2 rounded ${activeTab==='user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Perfil de Usuario</button>
+            <button onClick={() => setActiveTab('org')} className={`px-4 py-2 rounded ${activeTab==='org' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Perfil de Organización</button>
+          </div>
+
+          {activeTab === 'user' && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableUser.name} onChange={(e)=>setEditableUser({...editableUser,name:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableUser.email} onChange={(e)=>setEditableUser({...editableUser,email:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableUser.phone} onChange={(e)=>setEditableUser({...editableUser,phone:e.target.value})} />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button onClick={deleteUser} className="px-4 py-2 rounded bg-red-50 text-red-600 hover:bg-red-100">Eliminar perfil</button>
+                <button onClick={saveUser} className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Guardar</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'org' && (
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.name} onChange={(e)=>setEditableOrg({...editableOrg,name:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">País</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.country} onChange={(e)=>setEditableOrg({...editableOrg,country:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ciudad</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.city} onChange={(e)=>setEditableOrg({...editableOrg,city:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.address} onChange={(e)=>setEditableOrg({...editableOrg,address:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Persona de contacto</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.contactPerson || ''} onChange={(e)=>setEditableOrg({...editableOrg,contactPerson:e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.contactRole || ''} onChange={(e)=>setEditableOrg({...editableOrg,contactRole:e.target.value})} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Objeto Social</label>
+                <textarea className="w-full px-4 py-2 border rounded" rows={3} value={editableOrg.socialObject} onChange={(e)=>setEditableOrg({...editableOrg,socialObject:e.target.value})} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.contact?.email || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,email:e.target.value}})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.contact?.phone || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,phone:e.target.value}})} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sitio web</label>
+                  <input className="w-full px-4 py-2 border rounded" value={editableOrg.contact?.website || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,website:e.target.value}})} />
+                </div>
+              </div>
+
+              {/* ODS y Temáticas */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">ODS Relacionados (múltiple)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                    {odsOptions.map((ods) => (
+                      <label key={ods} className="flex items-center space-x-2 text-sm">
+                        <span className="inline-flex w-4 h-4 bg-indigo-200 rounded-sm items-center justify-center">
+                          <svg className="w-3 h-3 text-indigo-700" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"/></svg>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={(editableOrg.ods||[]).includes(ods.split('.')[0]) || (editableOrg.ods||[]).includes(ods)}
+                          onChange={(e)=>{
+                            const base = Array.isArray(editableOrg.ods)? [...editableOrg.ods]:[];
+                            const key = ods.split('.')[0];
+                            const present = base.includes(key) || base.includes(ods);
+                            const next = e.target.checked ? [...base.filter(v=>v!==ods && v!==key), key] : base.filter(v=>v!==ods && v!==key);
+                            setEditableOrg({...editableOrg, ods: next});
+                          }}
+                          className="text-indigo-600 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-gray-700">{ods}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Temáticas de Interés (múltiple)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                    {targetPopulationOptions.map((topic) => (
+                      <label key={topic} className="flex items-center space-x-2 text-sm">
+                        <span className="inline-flex w-4 h-4 bg-green-200 rounded-sm items-center justify-center">
+                          <svg className="w-3 h-3 text-green-700" viewBox="0 0 20 20" fill="currentColor"><rect x="4" y="4" width="12" height="12" rx="2"/></svg>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={(editableOrg.targetPopulation||[]).includes(topic)}
+                          onChange={(e)=>{
+                            const base = Array.isArray(editableOrg.targetPopulation)? [...editableOrg.targetPopulation]:[];
+                            const next = e.target.checked ? [...base, topic] : base.filter(v=>v!==topic);
+                            setEditableOrg({...editableOrg, targetPopulation: next});
+                          }}
+                          className="text-green-600 rounded focus:ring-green-500"
+                        />
+                        <span className="text-gray-700">{topic}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Redes sociales */}
+              <div className="border-t pt-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-3">Redes sociales</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
+                    <input className="w-full px-3 py-2 border rounded" value={editableOrg.contact?.social?.linkedin || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,social:{...(editableOrg.contact?.social||{}),linkedin:e.target.value}}})} placeholder="https://www.linkedin.com/company/..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+                    <input className="w-full px-3 py-2 border rounded" value={editableOrg.contact?.social?.instagram || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,social:{...(editableOrg.contact?.social||{}),instagram:e.target.value}}})} placeholder="https://instagram.com/..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
+                    <input className="w-full px-3 py-2 border rounded" value={editableOrg.contact?.social?.facebook || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,social:{...(editableOrg.contact?.social||{}),facebook:e.target.value}}})} placeholder="https://facebook.com/..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">X / Twitter</label>
+                    <input className="w-full px-3 py-2 border rounded" value={editableOrg.contact?.social?.x || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,social:{...(editableOrg.contact?.social||{}),x:e.target.value}}})} placeholder="https://twitter.com/..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">TikTok</label>
+                    <input className="w-full px-3 py-2 border rounded" value={editableOrg.contact?.social?.tiktok || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,social:{...(editableOrg.contact?.social||{}),tiktok:e.target.value}}})} placeholder="https://www.tiktok.com/@..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp (URL)</label>
+                    <input className="w-full px-3 py-2 border rounded" value={editableOrg.contact?.social?.whatsapp || ''} onChange={(e)=>setEditableOrg({...editableOrg,contact:{...editableOrg.contact,social:{...(editableOrg.contact?.social||{}),whatsapp:e.target.value}}})} placeholder="https://wa.me/+..." />
+                  </div>
+                </div>
+                {/* Vista previa de enlaces */}
+                <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                  {editableOrg.contact?.social?.linkedin && <a target="_blank" rel="noreferrer" className="text-blue-700 hover:underline" href={editableOrg.contact.social.linkedin}>LinkedIn</a>}
+                  {editableOrg.contact?.social?.instagram && <a target="_blank" rel="noreferrer" className="text-pink-600 hover:underline" href={editableOrg.contact.social.instagram}>Instagram</a>}
+                  {editableOrg.contact?.social?.facebook && <a target="_blank" rel="noreferrer" className="text-blue-600 hover:underline" href={editableOrg.contact.social.facebook}>Facebook</a>}
+                  {editableOrg.contact?.social?.x && <a target="_blank" rel="noreferrer" className="text-gray-700 hover:underline" href={editableOrg.contact.social.x}>X/Twitter</a>}
+                  {editableOrg.contact?.social?.tiktok && <a target="_blank" rel="noreferrer" className="text-black hover:underline" href={editableOrg.contact.social.tiktok}>TikTok</a>}
+                  {editableOrg.contact?.social?.whatsapp && <a target="_blank" rel="noreferrer" className="text-green-600 hover:underline" href={editableOrg.contact.social.whatsapp}>WhatsApp</a>}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Proyectos</h3>
+                  <button onClick={addOrgProject} className="px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 text-sm">Añadir proyecto</button>
+                </div>
+                <div className="space-y-4">
+                  {(editableOrg.projects || []).map((proj, idx) => (
+                    <div key={idx} className="p-4 border rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input className="px-3 py-2 border rounded" placeholder="Título" value={proj.title || ''} onChange={(e)=>{
+                          const next = [...editableOrg.projects]; next[idx] = { ...next[idx], title: e.target.value }; setEditableOrg({ ...editableOrg, projects: next });
+                        }} />
+                        <input className="px-3 py-2 border rounded" placeholder="Descripción" value={proj.description || ''} onChange={(e)=>{
+                          const next = [...editableOrg.projects]; next[idx] = { ...next[idx], description: e.target.value }; setEditableOrg({ ...editableOrg, projects: next });
+                        }} />
+                      </div>
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-700">Fotos (URLs)</span>
+                            <button onClick={()=>{
+                              const url = prompt('URL de imagen'); if(!url) return; const next = [...(proj.photos||[]), url];
+                              const arr = [...editableOrg.projects]; arr[idx] = { ...arr[idx], photos: next }; setEditableOrg({ ...editableOrg, projects: arr });
+                            }} className="text-xs px-2 py-1 bg-gray-100 rounded">Añadir</button>
+                          </div>
+                          <div className="space-y-1">
+                            {(proj.photos||[]).map((u,i)=>(
+                              <div key={i} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                                <span className="truncate mr-2">{u}</span>
+                                <button onClick={()=>{
+                                  const arr = [...editableOrg.projects]; arr[idx] = { ...arr[idx], photos: (arr[idx].photos||[]).filter((_,j)=>j!==i) }; setEditableOrg({ ...editableOrg, projects: arr });
+                                }} className="px-2 py-0.5 bg-red-50 text-red-600 rounded">Quitar</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-700">Videos (URLs)</span>
+                            <button onClick={()=>{
+                              const url = prompt('URL de video'); if(!url) return; const next = [...(proj.videos||[]), url];
+                              const arr = [...editableOrg.projects]; arr[idx] = { ...arr[idx], videos: next }; setEditableOrg({ ...editableOrg, projects: arr });
+                            }} className="text-xs px-2 py-1 bg-gray-100 rounded">Añadir</button>
+                          </div>
+                          <div className="space-y-1">
+                            {(proj.videos||[]).map((u,i)=>(
+                              <div key={i} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                                <span className="truncate mr-2">{u}</span>
+                                <button onClick={()=>{
+                                  const arr = [...editableOrg.projects]; arr[idx] = { ...arr[idx], videos: (arr[idx].videos||[]).filter((_,j)=>j!==i) }; setEditableOrg({ ...editableOrg, projects: arr });
+                                }} className="px-2 py-0.5 bg-red-50 text-red-600 rounded">Quitar</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        <button onClick={()=>deleteOrgProject(idx)} className="px-3 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 text-sm">Eliminar proyecto</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button onClick={saveOrg} className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Guardar cambios</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
   const ContactPage = () => {
     const [contactForm, setContactForm] = useState({
       name: '',
@@ -1058,15 +1683,15 @@ const App = () => {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">{t.contact}</h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">{t.contact}</h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Estamos aquí para ayudarte. Contáctanos para cualquier pregunta, sugerencia o colaboración. Nuestro equipo 
               está comprometido con tu éxito y el impacto positivo en las comunidades que servimos.
-            </p>
-          </div>
+          </p>
+        </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Formulario de Contacto */}
@@ -1234,9 +1859,9 @@ const App = () => {
               </div>
             </div>
           </div>
-        </div>
       </div>
-    );
+    </div>
+  );
   };
 
   if (userType === "donor") {
@@ -1257,6 +1882,7 @@ const App = () => {
       {currentPage === "community" && <CommunityPage />}
       {currentPage === "contact" && <ContactPage />}
       {currentPage === "map" && <MapView />}
+      {currentPage === "dashboard" && <DashboardPage />}
     </div>
   );
 };
